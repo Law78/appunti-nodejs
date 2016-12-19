@@ -9,14 +9,17 @@ Una richiesta inviata al server genera una risposta, che, oltre a contenere la r
 ### Ricapitolando
 
 __REST__: è una architettura web che definisce le regole di comunicazione tra client e server. Adottato come principale architettura da molto servizi web, fornendo l'accesso a degli endpoints ad una __risorsa__ tramite i principali __VERBS__ del protocollo HTTP. Solitamente in coppia con __JSON__ e sistemi di autenticazione basati su __TOKEN__, che risiedono nell'HEADER di una Request.
-__VERBS__: sono i comandi che inviamo tramite il protocollo HTTP, i più importanti sono GET, POST, PUT e DELETE che di fatto rappresentano i comandi CRUD del mondo SQL. I comandi POST e PUT sono ambedue comandi di creazione di una risorsa, in genere se l'identificativo viene creato lato server (e quindi è una risorsa ex-novo) la POST è più appropriata. Se l'identificativo è fornito lato client, la PUT è più appropriata in quanto probabilmente si tratta di un UPDATE piuttosto che una INSERT.
+__VERBS__: sono i comandi che inviamo tramite il protocollo HTTP, i più importanti sono GET, POST, PUT e DELETE che, per convenzione in molti framework e testi, vengono associati ai comandi CRUD del mondo SQL. I comandi POST e PUT sono ambedue comandi di creazione di una risorsa, in genere se l'identificativo viene creato lato server (e quindi probabilmente una risorsa ex-novo) la POST è più appropriata della PUT. Se l'identificativo è fornito lato client o comunque è una risorsa conosciuta dal client, la PUT è più appropriata. Filosofia-time. I metodi __safe__ sono quelli che non modificano le risorse e cioè la sola GET (e OPTIONS e HEAD non menzionati) e pertanto possono essere anche cachati senza danni. I metodi __idempotenti__ sono quei metodi che posso chiamare n volte senza che il risultato cambi, come ad esempio la funzione che stampa "ciao" o i verbs PUT e DELETE. Il POST? Non è ne safe ne idempotent. Ciò è da tenere a mente per costruire API fault-tolerant.
 
 
 ### NodeJS
 
+_NodeJS ci permette di usare Javascript anche per il codice backend, NodeJS è single-thread con un cuore asincrono, NodeJS è EventDriven ed esegue il codice concorrentemente grazie all'event-loop. NodeJS è veloce, grazie all'engine Google V8 ed al sistema I/O non bloccante. NodeJS è immediato (ma non semplice per la sua natura asincrona). L'ordine temporale va oltre al pensiero logico della programmazione sincrona e del nostro modo di pensare. E' questo lo scoglio da superare._
+
 La logica delle funzionalità viene racchiusa in __moduli__. I moduli vengono inizializzati con la __require__ una funzione di commonjs (adottata da NodeJS) che effettua il cache dell'__oggetto__ ritornato. Pertanto per _non avere cache_ devo ritornare una __function__ con la exports o con module.exports. Quando uso la __exports__ devo sempre aggiungere un oggetto: exports.getUser = ... e non assegnare direttamente exports!
 
 Esempio di come evitare il cache e poter fare due o più require di questo stesso modulo, senza avere side effects:
+
 ```js
 module.exports = function() {
    var rate = 0;
@@ -142,7 +145,7 @@ function handle_bad_request(response) {
 } 
 ```
 
-Questo è semplicemente un banale esempio, il codice andrebbe modularizzato in base agli endpoints della nostra API. Inoltre, passo fondamentale, è bene avere uno schema degli endpoints della nostra applicazione:
+Questo è semplicemente un banale esempio, il codice andrebbe __modularizzato__ in base agli endpoints della nostra API. Inoltre, passo fondamentale, è bene avere uno schema degli endpoints della nostra applicazione:
 
 | Method | URI                                | Descrizione                                |
 |--------|------------------------------------|--------------------------------------------|
@@ -156,10 +159,14 @@ Questo è semplicemente un banale esempio, il codice andrebbe modularizzato in b
 
 Tabella MD generata con: [markdown tables](http://www.tablesgenerator.com/markdown_tables)
 
-Ovviamente c'è un modo più semplice per gestire il body, tramite il modulo __body-parser__ e __multiparty__.
+Ovviamente c'è un modo più semplice per gestire il body, tramite il modulo __body-parser__ e __multiparty__ e le request e le reponse con uno dei più importanti moduli di NodeJS: __Express__, un framework per lo sviluppo di server API.
 
-Possiamo minificare i file js e css con GRUNT.
+Installiamo con npm i moduli: express, body-parser, nodemon, eslint e morgan, ma in futuro saranno utili anche moment, compact, chalk, passport, node-uuid ecc...
+I moduli possono essere installati localmente all'applicazione in modalità dipendenza o devDependecy o in modalità globale. Ad esempio nodemon è installabile globalmente. Se un modulo è esclusivamente in uso per lo sviluppo (ad es. morgan) possiamo installarlo con npm con --save-dev anzichè --save. Altri tool utili sarà tutta la suite babel per la transpilazione del codice in ES6: babel-core babel-cli babel-preset-es2015 babel-preset-stage-0
 
-
-
-Un importante, se non il più importante package di NodeJS è __Express__, un framework per lo sviluppo del server.
+```bash
+npm install -g nodemon
+npm install --save express body-parser
+npm install --save-dev morgan eslint
+```
+Infine possiamo minificare i file js e css con GRUNT.
