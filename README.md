@@ -152,6 +152,53 @@ import func as func from './foo';
 ...
 ```
 
+### Eventi
+
+NodeJS è fortemente orientato agli eventi, per questo è necessario avere una buona conoscenza di cos'è un evento. Un evento è qualcosa che succede, in un tempo non determinato, a cui la nostra applicazione risponde tramite un event listener, ioè un handler, una funzione. In NodeJS abbiamo eventi di sistema, che gestiamo con il core di V8 (tramite la libreria libvu), scritti in C++, ed eventi custom, scritti in Javascript, emessi da Event Emitter. Quest'ultimi saranno gli eventi con cui abbiamo a che fare. Di fatto la parte di libreria scritta in Javascript per la gestione degli eventi non è altro che un wrapper per gli eventi gestiti in realtà da libvu, quindi la parte Javascript è una "decorazione", un "fake" di eventi reali emessi da libvu.
+
+Come funziona un gestore di eventi? Proviamo a scrivere del codice, funzionante, che simula una coda di eventi e che per ogni evento è possibile associare uno o più listeners. L'idea è quella di avere un oggetto, a cui è possibile associare un numero dinamico di eventi, ogni evento sarà una array il cui contenuti è una funzione listener. Il codice che segue fa uso della funzione costruttrice per ritornare un oggetto vuoto, e due prototype "on" ed "emit" per aggiungere ed emettere l'evento. Il prototype farà si che queste funzioni non siano copiate ad ogni istanza creata, ma condivise da tutte le istanze. Per comprendere questo codice ricordati che in Javascript le funzioni sono first-class citizen e che un oggetto, oltre ad accedere alle proprietà con la dot notation, posso utilizzare la brackets notation per la gestione dinamica delle proprietà. Dal codice [EventEmitter](https://github.com/nodejs/node/blob/master/lib/events.js), una versione semplificata:
+
+```js
+function Emitter(){
+  this.events = {}
+}
+
+Emitter.prototype.on = function(event, listener){
+// se l'evento esiste già come proprietà dell'oggetto allora utilizzalo, altrimenti crealo come nuovo array
+  this.events[event] = this.events[event] || [];
+// inserisci per questo array la funzione listener
+  this.events[event].push(listener);
+}
+
+Emitter.prototype.emit = function(event){
+  if(this.events[event]){
+    this.events[event].map(function(listener){
+      listener();
+    });
+  }
+}
+
+module.exports = Emitter;
+```
+
+Per usare questo codice:
+
+```js
+var Emitter = require('./emitter');
+
+var emitter = new Emitter();
+
+emitter.on('phone-ring', function(){
+  console.log('Hey, rispondo al telefono!');
+});
+
+emitter.on('phone-ring', function(){
+  console.log('Hey, ho risposto anche io!!!');
+});
+
+emitter.emit('phone-ring');
+```
+
 ### Richieste e Risposte: il nostro Server
 
 NodeJS ci permette di gestire le richieste e le risposte del nostro server. Sicuramente gestiremo molti file statici (file HTML/immagini/fogli di stile/ecc...), successivamente dobbiamo essere in grado di gestire gli endpoints richiesti, ovvero gli indirizzi URL in entrata al server, che chiameremo __Routes__. Le routes verranno dirottate in specifici funzioni, o meglio moduli, che ne gestiranno la logica di backend.
