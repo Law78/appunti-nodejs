@@ -156,7 +156,7 @@ import func as func from './foo';
 
 NodeJS è fortemente orientato agli eventi, per questo è necessario avere una buona conoscenza di cos'è un evento. Un evento è qualcosa che succede, in un tempo non determinato, a cui la nostra applicazione risponde tramite un event listener, ioè un handler, una funzione. In NodeJS abbiamo eventi di sistema, che gestiamo con il core di V8 (tramite la libreria libvu), scritti in C++, ed eventi custom, scritti in Javascript, emessi da Event Emitter. Quest'ultimi saranno gli eventi con cui abbiamo a che fare. Di fatto la parte di libreria scritta in Javascript per la gestione degli eventi non è altro che un wrapper per gli eventi gestiti in realtà da libvu, quindi la parte Javascript è una "decorazione", un "fake" di eventi reali emessi da libvu.
 
-Come funziona un gestore di eventi? Proviamo a scrivere del codice, funzionante, che simula una coda di eventi e che per ogni evento è possibile associare uno o più listeners. L'idea è quella di avere un oggetto, a cui è possibile associare un numero dinamico di eventi, ogni evento sarà una array il cui contenuti è una funzione listener. Il codice che segue fa uso della funzione costruttrice per ritornare un oggetto vuoto, e due prototype "on" ed "emit" per aggiungere ed emettere l'evento. Il prototype farà si che queste funzioni non siano copiate ad ogni istanza creata, ma condivise da tutte le istanze. Per comprendere questo codice ricordati che in Javascript le funzioni sono first-class citizen e che un oggetto, oltre ad accedere alle proprietà con la dot notation, posso utilizzare la brackets notation per la gestione dinamica delle proprietà. Dal codice [EventEmitter](https://github.com/nodejs/node/blob/master/lib/events.js), una versione semplificata:
+Come funziona un gestore di eventi? Proviamo a scrivere del codice, funzionante, che simula una coda di eventi e che per ogni evento è possibile associare uno o più listeners. L'idea è quella di avere un oggetto, a cui è possibile associare un numero dinamico di eventi, ogni evento sarà una array il cui contenuti è una funzione listener. Il codice che segue fa uso della funzione costruttrice per ritornare un oggetto vuoto, e due prototype "on" ed "emit" per aggiungere ed emettere l'evento. E' plausibile avere più di un oggetto Emitter, ognuno con un suo elenco di eventi, magari diviso per logica di dominio, ecco perchè si usa una funzione costruttrice. Inoltre il prototype farà si che queste funzioni non siano copiate ad ogni istanza creata, ma condivise da tutte le istanze. Per comprendere questo codice ricordati che in Javascript le funzioni sono first-class citizen e che un oggetto, oltre ad accedere alle proprietà con la dot notation, posso utilizzare la brackets notation per la gestione dinamica delle proprietà. Dal codice [EventEmitter](https://github.com/nodejs/node/blob/master/lib/events.js), una versione semplificata:
 
 ```js
 function Emitter(){
@@ -181,10 +181,11 @@ Emitter.prototype.emit = function(event){
 module.exports = Emitter;
 ```
 
-Per usare questo codice:
+Per usare questo codice, creo un emitter.js e un config.js
 
 ```js
 var Emitter = require('./emitter');
+var events = require('./config').events;
 
 var emitter = new Emitter();
 
@@ -192,11 +193,123 @@ emitter.on('phone-ring', function(){
   console.log('Hey, rispondo al telefono!');
 });
 
-emitter.on('phone-ring', function(){
+emitter.on(events.PHONE_RING, function(){
   console.log('Hey, ho risposto anche io!!!');
 });
 
-emitter.emit('phone-ring');
+emitter.emit(events.PHONE_RING);
+```
+
+```js
+module.exports = {
+  events: {
+    PHONE_RING: 'phone_ring'
+  }
+}
+```
+
+L'Event Emitter di NodeJS, linkato in alto, ovviamente è più complesso, prevede non solo delle ottimizzazioni di gestione, come il clone di Array oppure l'inserimento iniziale del listener direttamente nella proprietà e di convertire tale proprietà in array se e solo se ho più di un listener. Prevede l'impostazione di un domain, di un max_listeners, di passare degli argomenti, il check del listener che sia una funzione, ecc... . Il pattern utilizzato da NodeJS è il seguente:
+
+```js
+function Emitter(){
+  Emitter.init.call(this);
+}
+
+Emitter.init = function(){
+  this.events = {}
+}
+
+module.exports = Emitter;
+```
+
+E' un pattern che si trova in molte librerie e framework di Javascript. Vediamo un esempio più complesso, e quindi più simile all'implementazione reale di NodeJS. Dovresti essere in grado di capirlo:
+
+```js
+function Emitter(){
+  Emitter.init.call(this);
+ }
+
+Emitter.prototype.on = function on(event, listener){
+  if (typeof listener !== 'function')
+    throw new TypeError('Il "listener" deve essere una funzione!');
+  this.events[event] = this.events[event] || [];
+  this.events[event].push(listener);
+}
+
+Emitter.prototype.emit = function emit(event){
+  len = arguments.length;
+  handler = this.events[event];
+  console.log(len);
+  switch (len) {
+     // fast cases
+    case 1:
+      emitNone(handler, this);
+      break;
+    case 2:
+      emitOne(handler, this, arguments[1]);
+      break;
+    default:
+      args = new Array(len - 1);
+      for (i = 1; i < len; i++)
+        args[i - 1] = arguments[i];
+      emitMany(handler, this, args)
+  }
+}
+
+function emitNone(handler, self) {
+  var len = handler.length;
+  var listeners = arrayClone(handler, len);
+  for (var i = 0; i < len; ++i)
+    listeners[i].call(self);
+}
+
+function emitOne(handler, self, arg1) {
+  var len = handler.length;
+  var listeners = arrayClone(handler, len);
+  for (var i = 0; i < len; ++i)
+    listeners[i].call(self, arg1);
+}
+
+function emitMany(handler, self, args){
+  var len = handler.length;
+  var listeners = arrayClone(handler, len);
+  for (var i = 0; i < len; ++i)
+    listeners[i].apply(self, args);
+}
+
+function arrayClone(arr, i) {
+  var copy = new Array(i);
+  while (i--)
+    copy[i] = arr[i];
+  return copy;
+}
+
+Emitter.init = function(){
+  this.events = {}
+}
+
+module.exports = Emitter;
+```
+
+Questa versione fa uso del pattern di inizializzazione, controlla che il listener sia una funzione, inoltre possibile passare degli argomenti:
+
+```js
+var Emitter = require('./emitter');
+var events = require('./config').events;
+
+var emitter = new Emitter();
+
+emitter.on(events.PHONE_RING, function(name){
+  console.log('Hey, Sta chiamando:', name);
+});
+
+emitter.emit(events.PHONE_RING, 'Teresa');
+```
+
+Ora posso fare una prova, togliere il mio codice emitter sostituendo la prima riga con questa che utilizza il codice di NodeJS e verificare che il comportamento di fatto è identico:
+
+```js
+var Emitter = require('events');
 ```
 
 ### Richieste e Risposte: il nostro Server
