@@ -21,8 +21,8 @@ Per la creazione di un progetto utilizziamo il comando: npm init. Questo comando
 
 ### Module Pattern
 
-La logica delle funzionalità viene racchiusa in __moduli__. I moduli vengono inizializzati con la __require__ una funzione che effettua il cache dell'__oggetto__ ritornato (da module.exports). Pertanto per _non avere cache_ devo ritornare una __function__ con la exports o con module.exports. Quando uso la __exports__ devo sempre aggiungere un oggetto: exports.getUser = ... e non assegnare direttamente exports!
-Il modulo richiamato da NodeJS viene processato dalla librearia Module di NodeJS che crea un oggetto module che carica il nostro file e crea un funzione che wrappa il nostro file. In realtà tutto ciò che scrivo in NodeJS è incluso in questa funzione che crea NodeJS:
+La logica delle funzionalità viene racchiusa in __moduli__. I moduli vengono inizializzati con la __require__ una funzione che effettua il cache dell'__oggetto__ ritornato (da module.exports). Pertanto per _non avere cache_ devo ritornare una __function__ con la exports o con module.exports. Quando uso la __exports__ (un alias di module.exports) devo sempre aggiungere un oggetto: exports.getUser = ... e non assegnare direttamente exports!
+Il modulo richiamato da NodeJS viene processato dalla librearia Module di NodeJS che crea un oggetto module.exports che carica il nostro file e crea un funzione che wrappa il nostro file. In realtà tutto ciò che scrivo in NodeJS è incluso in questa funzione che crea NodeJS:
 
 ```js
 (function(exports, require, module, __filename, __dirname){
@@ -34,9 +34,21 @@ Il modulo richiamato da NodeJS viene processato dalla librearia Module di NodeJS
 });
 ```
 
-Questo è importante da capire perchè in questo modo il mio modulo è protetto (function scope) da eventuali altri moduli che hanno stessi nome, inoltre è importante perchè potrei incorrere nell'errore che il mio file app.js iniziale possa essere legato al this del global scope, mentre sarà il this della funzione wrap. Il module.exports è ciò che ritorna la require.
+e verrà eseguita in questo modo:
 
-Ovviamente le modalità di ciò che esporto sono varie:
+```js
+fn(module.exports, require, module, filename, dirname);
+```
+
+Nota il legame tra module.exports e l'alias exports creato, ricorda che se volessi usare exports al posto di module.exports, devo sempre agganciare una proprietà, mutando il mio oggeto module.exports, altrimenti sovrascrivo questo legame:
+
+```js
+exports.foo = function(){}
+```
+
+Capire perchè il mio codice è wrappato in questo modo è importante perchè non solo il mio modulo è protetto (function scope) da eventuali altri moduli che hanno stessi nome, ma è importante perchè potrei incorrere nell'errore che il mio file app.js iniziale possa essere legato al this del global scope, mentre sarà il this della funzione wrap. Il module.exports è l'oggeto che ritorna la require.
+
+Ovviamente le modalità di ciò che esporto sono varie, posso ancora esporta un oggetto oppure sovrascrivere l'oggeto ed esportare una funzione (ed evitare il cache - vedi avanti):
 
 ```js
 var english = require('./english');
@@ -67,7 +79,80 @@ module.exports = function() {
 }
 ```
 
-### Richieste e Risposte: il nostre Server
+In questo modo sovrascrivo il mio oggetto module.exports con una funzione. Posso esportare con module.exports una proprietà che contiene una funzione:
+
+```js
+module.exports.bar = function(){
+  console.log("I'm bar, where's foo?");
+}
+```
+
+e che userò in questo modo:
+
+```js
+var foo = require('./foo');
+foo.bar();
+
+// oppure:
+var foo = require(('./foo').bar;
+foo();
+```
+
+Posso sovrascrivere l'oggetto module.exports con il mio oggetto che posso costruire con la Class, con Object.create o con una funzione costruttore:
+
+```js
+function Foo(){
+  this.foo = "I'm foo instance!";
+  this.greet = function(name){
+    console.log(`Hi ${name}`);
+  }
+}
+
+module.exports = new Foo();
+```
+
+e che userò in questo modo:
+
+```js
+var foo = require('./foo');
+foo.greet('Lorenzo');
+```
+
+Ricorda, in questo modo però, se ho più require di questo stetto file, essendo un oggetto, avrò sempre lo stesso oggetto per via del caching che effettua NodeJS (cachedModule). Per evitare il cache, mi basterà cambiare il module.exports ed esportare Foo e non l'oggetto creato:
+
+```js
+...
+module.exports = Foo;
+```
+
+che userò con la new, perchè funzione construttrice.
+Infine possiamo esporre un oggetto, che a sua volta espone solo ciò che consideriamo pubblico e tralasciando fuori ciò che consideriamo privato:
+
+```
+var bar = "Valore privato";
+var foo = function pubblica(){}
+
+module.exorts = {
+  foo: foo
+}
+
+```
+
+Posso usare export e import di ES6? Certamente, ma con Babel (che vedrò più avanti):
+
+```js
+export function func(){}
+export default {}
+```
+
+```js
+import * as func from './foo';
+oppure
+import func as func from './foo';
+...
+```
+
+### Richieste e Risposte: il nostro Server
 
 NodeJS ci permette di gestire le richieste e le risposte del nostro server. Sicuramente gestiremo molti file statici (file HTML/immagini/fogli di stile/ecc...), successivamente dobbiamo essere in grado di gestire gli endpoints richiesti, ovvero gli indirizzi URL in entrata al server, che chiameremo __Routes__. Le routes verranno dirottate in specifici funzioni, o meglio moduli, che ne gestiranno la logica di backend.
 Quindi gli step sono: __parse url__, __file statici__, __logica delle routes__. I file statici accedono al file system, mentre la logica delle routes solitamente ad un __database__.
