@@ -3,7 +3,7 @@
 *Se le soluzioni diventano complesse, probabilmente il problema è mal posto o non esiste (Lorenzo Franceschini)*
 
 Quando si parla di NodeJS, dobbiamo parlare subito di architettura __REST__ e del concetto che ciò di cui ci serviamo è visto come una risorsa, raggiungile attraverso una rotta detta __ROUTES__ tramite un comando chiamato più propriamento __VERBS__ del protocollo di comunicazione __HTTP__ che ci permette quindi di identificare in maniera univoca quello che si dice __URI__. La risorsa è rappresentata da un formato, definito dal Content-type e richiesta tramite l'Accept nell'header, che può essere __JSON__, __XML__, text o una forma binaria (es. image/jpg).
-La comunicazione con la risorsa è considerata __Atomica__, per cui un comando porta in se tutta l'informazione necessaria alla modifica della risorsa stessa. Questo è ciò che porta una architettura REST ad essere __RESTful__ e cioè senza stati. Il fatto che la comunicazione è senza stato ci permette di scalare l'applicazione adottando dei carichi di bilanciamento e avere più nodi in risposta alle richieste.
+La comunicazione con la risorsa è considerata __Atomica__, per cui un comando porta in se tutta l'informazione necessaria alla modifica della risorsa stessa. Questo è ciò che porta una architettura REST ad essere __RESTful__ e cioè senza stati. Il fatto che la comunicazione è senza stato ci permette di scalare l'applicazione adottando dei carichi di bilanciamento e avere più nodi in risposta alle richieste, ad esempio utilizzando NGINX.
 Una richiesta inviata al server genera una risposta, che, oltre a contenere la risorsa nel formato specificato, prevede l'invio di uno __STATUS__. I valori di status più comuni sono: 200 (OK), 201 (Risorsa Creata), 204 (No Content - usata per la DELETE) 400 (Richiesta non valida), 404 (Risorsa Non Trovata), 500 (Errore interno del Server).
 
 ### Ricapitolando
@@ -19,7 +19,37 @@ _NodeJS ci permette di usare Javascript anche per il codice backend, NodeJS è s
 L'installazione di NodeJS ci fornisce oltre al comando node (un ambiente REPL), anche l'utilissimo Node Package Manager (npm) per l'installazione e creazione di moduli.
 Per la creazione di un progetto utilizziamo il comando: npm init. Questo comando ci genera il file __package.json__ con i dettagli del progetto e i moduli che andremo ad installare sempre con il comando npm.
 
-La logica delle funzionalità viene racchiusa in __moduli__. I moduli vengono inizializzati con la __require__ una funzione di commonjs (adottata da NodeJS) che effettua il cache dell'__oggetto__ ritornato. Pertanto per _non avere cache_ devo ritornare una __function__ con la exports o con module.exports. Quando uso la __exports__ devo sempre aggiungere un oggetto: exports.getUser = ... e non assegnare direttamente exports!
+### Module Pattern
+
+La logica delle funzionalità viene racchiusa in __moduli__. I moduli vengono inizializzati con la __require__ una funzione che effettua il cache dell'__oggetto__ ritornato (da module.exports). Pertanto per _non avere cache_ devo ritornare una __function__ con la exports o con module.exports. Quando uso la __exports__ devo sempre aggiungere un oggetto: exports.getUser = ... e non assegnare direttamente exports!
+Il modulo richiamato da NodeJS viene processato dalla librearia Module di NodeJS che crea un oggetto module che carica il nostro file e crea un funzione che wrappa il nostro file. In realtà tutto ciò che scrivo in NodeJS è incluso in questa funzione che crea NodeJS:
+
+```js
+(function(exports, require, module, __filename, __dirname){
+  var hello = function(){
+    console.log('Hello World!');
+  };
+  
+  module.exports = hello;
+});
+```
+
+Questo è importante da capire perchè in questo modo il mio modulo è protetto (function scope) da eventuali altri moduli che hanno stessi nome, inoltre è importante perchè potrei incorrere nell'errore che il mio file app.js iniziale possa essere legato al this del global scope, mentre sarà il this della funzione wrap. Il module.exports è ciò che ritorna la require.
+
+Ovviamente le modalità di ciò che esporto sono varie:
+
+```js
+var english = require('./english');
+...
+module.exports = {
+   english: english,
+   italian: italian,
+   french: french
+}
+```
+
+Dove suppongo di avere delle require, ognuna per una lingua, che a loro volta importano delle funzionalità che espongo in un file js, che a sua volta verrà importato da un altro file e che potrà accedere alle varie funzionalità esposte dagli oggetti che rappresentano le varie lingue.
+Se importo un file JSON con la require, questo viene implicitamente converitito in un oggetto JS.
 
 Esempio di come evitare il cache e poter fare due o più require di questo stesso modulo, senza avere side effects:
 
@@ -36,6 +66,8 @@ module.exports = function() {
    }
 }
 ```
+
+### Richieste e Risposte: il nostre Server
 
 NodeJS ci permette di gestire le richieste e le risposte del nostro server. Sicuramente gestiremo molti file statici (file HTML/immagini/fogli di stile/ecc...), successivamente dobbiamo essere in grado di gestire gli endpoints richiesti, ovvero gli indirizzi URL in entrata al server, che chiameremo __Routes__. Le routes verranno dirottate in specifici funzioni, o meglio moduli, che ne gestiranno la logica di backend.
 Quindi gli step sono: __parse url__, __file statici__, __logica delle routes__. I file statici accedono al file system, mentre la logica delle routes solitamente ad un __database__.
@@ -258,6 +290,16 @@ Con app.use indichiamo l'utilizzo dei nostri middleware, di terze parti come mor
 
 ## Routes
 
+In NodeJS una route è il legame tra un endpoint ed una risora individuata da un URI. Una istanza express ha delle funzioni di gestione degli instradamenti: get, post, put e delete che accettano due parametri, l'URI e la funzione di gestione.
+
+```js
+app.get('/', function(req, res){
+   ...
+});
+```
+
+Spesso gli oggetti request e response sono abbreviati in req e res ed il parametro next omesso.
+
 Le routes le modularizziamo a parte in un file routes.js nella cartella ./src/config utilizzando la classe express.Router, che ci ritorna un middleware:
 
 ```js
@@ -318,4 +360,9 @@ app.use(function(err, req, res, next) {
 }); 
 ```
 
+## Views
+
+## NodeJS ed ES6
+
+# Note finali
 Infine possiamo minificare i file js e css con GRUNT.
