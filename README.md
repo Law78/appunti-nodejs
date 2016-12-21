@@ -232,14 +232,19 @@ function Emitter(){
 Emitter.prototype.on = function on(event, listener){
   if (typeof listener !== 'function')
     throw new TypeError('Il "listener" deve essere una funzione!');
+  if (!this.events) {
+    this.events = {};
+  }
   this.events[event] = this.events[event] || [];
   this.events[event].push(listener);
 }
 
 Emitter.prototype.emit = function emit(event){
+// Controllo se sono stati registrati eventi
+  if(!this.events)
+    return;
   len = arguments.length;
   handler = this.events[event];
-  console.log(len);
   switch (len) {
      // fast cases
     case 1:
@@ -311,6 +316,35 @@ Ora posso fare una prova, togliere il mio codice emitter sostituendo la prima ri
 ```js
 var Emitter = require('events');
 ```
+
+NodeJS ci permette di creare oggetti che estendono da EventEmitter utilizzando la libreria util e il metodo inherits, che richiede il passaggio di due funzioni costruttrici (e non gli oggetti finali) e l'effetto è quello di modificare il prototype-chain della funzione costruttrice di sinistra, legandola con la funzione costruttrice di destra:
+
+```js
+var Emitter = require('./emitter');
+var util = require('util');
+
+function Persona(){
+  Emitter.call(this);
+  this.nome = "Lorenzo";
+}
+
+util.inherits(Persona, Emitter);
+
+Persona.prototype.mangia = function mangia(cibo){
+  console.log('Mangia', cibo);
+  this.emit('mangia');
+}
+
+persona = new Persona();
+
+persona.on('mangia', function(){
+  console.log('Ho mangiato qualcosa');
+});
+
+persona.mangia('pasta');
+```
+
+Emitter è la nostra classe e Persona è una funzione costruttrice, che ora può accedere ai metodi definiti nel **prototype** da Emitter (puoi provare ad usare anche Events di NodeJS) grazie a **util.inherits**. E' importante osservare la chiamata **Emitter.call(this)** che faccio nella funzione costruttore. Questa chiamata di fatto è la chiamata al costruttore base, al super constructor, che mi permette di legare al mio oggetto this eventuali proprietà e funzioni che Emitter crea nel suo costruttore direttamente all'oggetto this. Se non facessi questa chiamata, avrei come risultato l'accessibilità alle sole proprietà e funzioni che Emitter lega al prototipo e perderei le eventuali proprietà e funzioni legate direttamente al this perchè il __costruttore di Emitter non verrebbe invocato(!!!)__. In questo modo la mia ereditarietà è completa: eredito tutto ciò che fa parte del prototipo più tutto ciò che la classe da cui derivo aggancia al this!
 
 ### Richieste e Risposte: il nostro Server
 
