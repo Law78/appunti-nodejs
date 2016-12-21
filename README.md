@@ -24,6 +24,12 @@ Per la creazione di un progetto utilizziamo il comando: npm init. Questo comando
 
 Alcune funzionalità sono disponibili a livello globale per Javascript, e quindi non ho bisogno di includere dei file esterni, come ad esempio l'uso di Buffer o \_\_dirname: [Global Objects](https://nodejs.org/api/globals.html#globals_global_objects)
 
+### Convenzioni
+
+La prima convenzione che mi appunto è quella detta Error-First Callback: il primo parametro di una callback è un parametro di errore, se non ci sono errori allora il suo valore sarà null.
+
+*Sezione in lavorazione*
+
 
 ### Invocare funzioni C++
 
@@ -104,6 +110,8 @@ console.log(addon.greetings("hello","world"));
 ```
 
 e con node greetings.js ottengo: "helloworld" :D
+
+*Sezione in lavorazione*
 
 
 https://nodejs.org/api/addons.html
