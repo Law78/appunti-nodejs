@@ -6,21 +6,107 @@ Quando si parla di NodeJS, dobbiamo parlare subito di architettura __REST__ e de
 La comunicazione con la risorsa è considerata __Atomica__, per cui un comando porta in se tutta l'informazione necessaria alla modifica della risorsa stessa. Questo è ciò che porta una architettura REST ad essere __RESTful__ e cioè senza stati. Il fatto che la comunicazione è senza stato ci permette di scalare l'applicazione adottando dei carichi di bilanciamento e avere più nodi in risposta alle richieste, ad esempio utilizzando NGINX.
 Una richiesta inviata al server genera una risposta, che, oltre a contenere la risorsa nel formato specificato, prevede l'invio di uno __STATUS__. I valori di status più comuni sono: 200 (OK), 201 (Risorsa Creata), 204 (No Content - usata per la DELETE) 400 (Richiesta non valida), 404 (Risorsa Non Trovata), 500 (Errore interno del Server).
 
-### Ricapitolando
-
 __REST__: è una architettura web che definisce le regole di comunicazione tra client e server. Adottato come principale architettura da molto servizi web, fornendo l'accesso a degli endpoints ad una __risorsa__ tramite i principali __VERBS__ del protocollo HTTP. Solitamente in coppia con __JSON__ e sistemi di autenticazione basati su __TOKEN__, che risiedono nell'HEADER di una Request.
 __VERBS__: sono i comandi che inviamo tramite il protocollo HTTP, i più importanti sono GET, POST, PUT e DELETE che, per convenzione in molti framework e testi, vengono associati ai comandi CRUD del mondo SQL. I comandi POST e PUT sono ambedue comandi di creazione di una risorsa, in genere se l'identificativo viene creato lato server (e quindi probabilmente una risorsa ex-novo) la POST è più appropriata della PUT. Se l'identificativo è fornito lato client o comunque è una risorsa conosciuta dal client, la PUT è più appropriata. Filosofia-time. I metodi __safe__ sono quelli che non modificano le risorse e cioè la sola GET (e OPTIONS e HEAD non menzionati) e pertanto possono essere anche cachati senza danni. I metodi __idempotenti__ sono quei metodi che posso chiamare n volte senza che il risultato cambi, come ad esempio la funzione che stampa "ciao" o i verbs PUT e DELETE. Il POST? Non è ne safe ne idempotent. Ciò è da tenere a mente per costruire API fault-tolerant.
-
 
 # NodeJS
 
 _NodeJS ci permette di usare Javascript anche per il codice backend, NodeJS è single-thread con un cuore asincrono, NodeJS è EventDriven ed esegue il codice concorrentemente grazie all'event-loop. NodeJS è veloce, grazie all'engine Google V8 ed al sistema I/O non bloccante. NodeJS è immediato (ma non semplice per la sua natura asincrona). L'ordine temporale va oltre al pensiero logico della programmazione sincrona e del nostro modo di pensare. E' questo lo scoglio da superare._
 Javascript è sincrono, NodeJS è asincrono.
 
-Concetti da avere ben in mente per affrontare NodeJS: function come first-class citizen, callback, promise, ereditarietà prototipale, moduli, scope, closure sono concetti di Javascript, mentre sono relativi all'architettura NodeJS i concetti che stanno dietro [libvu](http://libuv.org) (la libreria scritta in C++ che interagisce con il Sistema Operativo), V8 (sincrono) che esegue il codice Javascript, l'event loop che gira internamente a libvu e costantemente controllato da libvu insieme alla coda degli eventi (event queue), ciò che esce dalla event queue passa a V8 e, se è un evento a cui è associata una callback, alla callback javascript che verrà eseguita nel momento in cui V8 termina l'attuale codice in esecuzione, in quanto V8 è sincrono. Questo sistema di gestione eventi di libvu è un meccanismo simile a quello che implementano i browser e che permette a Javascript di essere "asincrono" (es. chiamata Ajax o il setTimeout). Ma tutta questa architettura fa si che V8-libvu-NodeJS sia una architettura event-driven non bloccante per operazione di I/O. Tutte quelle operazioni di accesso ai file, accesso ad un database, accesso a dati via internet, avvengono a basso livello e gestiti grazie a libvu e al suo sistema di eventi e alla abilità di chiamare del codice Javascript tramite l'Event Emitter che vedremo più avanti.
+Concetti da avere ben in mente per affrontare NodeJS: function come first-class citizen, callback, promise, ereditarietà prototipale, moduli, scope, closure sono concetti di Javascript, mentre sono relativi all'architettura NodeJS i concetti che stanno dietro [libvu](http://libuv.org) (la libreria scritta in C che interagisce con il Sistema Operativo), V8 (sincrono) che esegue il codice Javascript, l'event loop che gira internamente a libvu e costantemente controllato da libvu insieme alla coda degli eventi (event queue), ciò che esce dalla event queue passa a V8 e, se è un evento a cui è associata una callback, alla callback javascript che verrà eseguita nel momento in cui V8 termina l'attuale codice in esecuzione, in quanto V8 è sincrono. Questo sistema di gestione eventi di libvu è un meccanismo simile a quello che implementano i browser e che permette a Javascript di essere "asincrono" (es. chiamata Ajax o il setTimeout). Ma tutta questa architettura fa si che V8-libvu-NodeJS sia una architettura event-driven non bloccante per operazione di I/O. Tutte quelle operazioni di accesso ai file, accesso ad un database, accesso a dati via internet, avvengono a basso livello e gestiti grazie a libvu e al suo sistema di eventi e alla abilità di chiamare del codice Javascript tramite l'Event Emitter che vedremo più avanti.
+
+__Libuv__: E' la libreria C che implementa l'event loop di Nodejs, la modalità asincrona della piattaforma, inoltre funge da libreria astratta per facilirare l'accesso ai vari sistemi operativi, come l'interazione al filesystem, sockets, eventi di sistema, database e threads.
+__V8__: La libreria in C++ di Nodejs che "estende" Javascript fornendo una API che ci permette di creare oggetti, chiamare funzioni, ecc...
 
 L'installazione di NodeJS ci fornisce oltre al comando node (un ambiente REPL), anche l'utilissimo Node Package Manager (npm) per l'installazione e creazione di moduli.
 Per la creazione di un progetto utilizziamo il comando: npm init. Questo comando ci genera il file __package.json__ con i dettagli del progetto e i moduli che andremo ad installare sempre con il comando npm.
+
+Alcune funzionalità sono disponibili a livello globale per Javascript, e quindi non ho bisogno di includere dei file esterni, come ad esempio l'uso di Buffer o \_\_dirname: [Global Objects](https://nodejs.org/api/globals.html#globals_global_objects)
+
+
+### Invocare funzioni C++
+
+Sebbene questo argomento non è rilevante per poter utilizzare NodeJS, ho voluto scrivere due righe sull'argomento a mò di memoria personale e curiosità. E' possibile scrivere funzioni e oggetti in C++ e invocarli da Javascript tramite gli Addons.
+Vediamo come mappare una funzione e i suoi argomenti passati da Javascript e il valore di ritorno passato da C++. Prima di tutto devo installare globalmente node-gyp globalmente, creo un file .cc e creo il file binding.gyp:
+
+```
+{
+  "targets": [
+    {
+      "target_name": "addon",
+      "sources": [ "greetings.cc" ]
+    }
+  ]
+}
+```
+
+successivamente creo il file greetings.cc
+
+```cpp
+// greetings.cc
+#include <node.h>
+
+namespace greetings {
+
+using v8::Exception;
+using v8::FunctionCallbackInfo;
+using v8::Isolate;
+using v8::Local;
+using v8::Object;
+using v8::String;
+using v8::Value;
+
+void Greetings(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+
+  // Controllo il numero di argomenti passati
+  if (args.Length() < 2) {
+    // Throw an Error that is passed back to JavaScript
+    isolate->ThrowException(Exception::TypeError(
+        String::NewFromUtf8(isolate, "Wrong number of arguments")));
+    return;
+  }
+
+  // Controllo il tipo degli argomenti
+  if (!args[0]->IsString() || !args[1]->IsString()) {
+    isolate->ThrowException(Exception::TypeError(
+        String::NewFromUtf8(isolate, "Wrong arguments")));
+    return;
+  }
+
+  Local<String> concatena = String::Concat(args[0]->ToString(isolate), args[1]->ToString(isolate));
+  args.GetReturnValue().Set(concatena);
+}
+
+void Init(Local<Object> exports) {
+  NODE_SET_METHOD(exports, "greetings", Greetings);
+}
+
+NODE_MODULE(addon, Init)
+
+} 
+```
+
+Lancio i comandi:
+
+```bash
+node-gyp configure
+node-gyp build
+```
+
+ed il file greetings.js:
+
+```js
+const addon = require('./build/Release/addon');
+
+console.log(addon.greetings("hello","world"));
+```
+
+e con node greetings.js ottengo: "helloworld" :D
+
+
+https://nodejs.org/api/addons.html
 
 ### Module Pattern
 
