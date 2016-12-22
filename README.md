@@ -8,11 +8,17 @@ Una richiesta inviata al server genera una risposta, che, oltre a contenere la r
 
 __REST__: è una architettura web che definisce le regole di comunicazione tra client e server. Adottato come principale architettura da molto servizi web, fornendo l'accesso a degli endpoints ad una __risorsa__ tramite i principali __VERBS__ del protocollo HTTP. Solitamente in coppia con __JSON__ e sistemi di autenticazione basati su __TOKEN__, che risiedono nell'HEADER di una Request.
 __VERBS__: sono i comandi che inviamo tramite il protocollo HTTP, i più importanti sono GET, POST, PUT e DELETE che, per convenzione in molti framework e testi, vengono associati ai comandi CRUD del mondo SQL. I comandi POST e PUT sono ambedue comandi di creazione di una risorsa, in genere se l'identificativo viene creato lato server (e quindi probabilmente una risorsa ex-novo) la POST è più appropriata della PUT. Se l'identificativo è fornito lato client o comunque è una risorsa conosciuta dal client, la PUT è più appropriata. Filosofia-time. I metodi __safe__ sono quelli che non modificano le risorse e cioè la sola GET (e OPTIONS e HEAD non menzionati) e pertanto possono essere anche cachati senza danni. I metodi __idempotenti__ sono quei metodi che posso chiamare n volte senza che il risultato cambi, come ad esempio la funzione che stampa "ciao" o i verbs PUT e DELETE. Il POST? Non è ne safe ne idempotent. Ciò è da tenere a mente per costruire API fault-tolerant.
-__PROTOCOLLO__:
-__TCP/IP__:
-__HTTP__:
-__ADDRESS__ e __PORT__:
-__SOCKET__:
+
+Alcuni termini importanti su cui è meglio fare un refresh:
+- __API__: E' l'interfaccia pubblica che viene esposta da un server ai client che utilizzano un insieme di operazioni sulle risorse messe a disposizione. Più precisamente sono gli endpoint che puntano alle risorse.
+- __PROTOCOLLO__: E' un insieme di regole che serve per la comunicazione tra due sistemi eterogenei. Un protocollo pone le basi affinchè la comunicazione sia proficua per entrambi i lati.
+- __TCP/IP__: Sono due protocolli, spesso accoppiati ed erroneamente confusi come unico protoccolo, in quanto uno si occupa della trasmissione di pacchetti in maniera sicura (UDP è il protocollo antagonista), mentre l'altro rappresenta l'indirizzo da raggiungere e che permette quindi la connessione tra reti differenti.
+- __HTTP__: E' un protocollo che rappresenta il tipo di informazione trasmessa nel pacchetto.
+- __ADDRESS__ e __PORT__: Un indirizzo individua un terminale sulla rete, ma non è sufficiente ad indivudare il servizio destinatario del pacchetto, per questo utilizziamo la porta. Alcuni servizi hanno porte di default e per questo motivo a volte si omettono.
+- __SOCKET__: E' un canale di comunicazione che può essere lasciato aperto (es. chat) o aperto-chiuso ad ogni richiesta-risposta.
+- __SERIALIZE__: E' il termine che individua l'operazione di rendere un oggetto in un formato che può essere trasferito o salvato. La deserializzazione è il processo contrario. Vedi ad es. JSON.stringify e JSON.parse, rispettivamente serializzazione e deserializzazione.
+- __JSON__: E' un formato ispirato agli oggetti letterali di Javascript. E' un semplice plain-text, human-readable, per il trasferimento di dati. Probabilmente conoscerai XML...
+- __ROUTING__: L'instradamento consiste in una mappatura delle richieste ad una risorsa. Le richieste sono individuate dagli endpoint, ovvero degli indirizzi del tipo '/users' e da un verbo HTTP.
 
 # NodeJS
 
@@ -734,6 +740,8 @@ Tabella MD generata con: [markdown tables](http://www.tablesgenerator.com/markdo
 
 # Test
 
+Cos'è uno Unit Test? In cosa consiste? Cos'è un Test Runner? Cos'è una libreria di asserzioni? Cosa vogliono dire i termini di spies, stubs e mocks? Qual'è la differenza tra Karma e Mocha e Jasmine? E TDD e BDD? **Da scrivere**
+ 
 Riprendiamo la prima versione del nostro server della sezione precedente, in cui ho esportato il server e la listen come chiamata successiva. Introduciamo una breve sezione per il testing del nostro server NodeJS. Installiamo i seguenti tools: npm install --save-dev mocha chai request e (se non l'ho fatto fate npm init) nel package.json andiamo ad inserire il comando "script" per lanciare mocha:
 
 ```
@@ -972,5 +980,12 @@ app.use(function(err, req, res, next) {
 
 ## NodeJS ed ES6
 
+## MySQL
+
+## MongoDB
+
+## PostgreSQL
+
+
 # Note finali
-Infine possiamo minificare i file js e css con GRUNT.
+Infine possiamo minificare i file js e css con GRUNT, GULP... Utilizzare PM2... YARN...
