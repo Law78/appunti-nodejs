@@ -569,7 +569,28 @@ NodeJS ci permette di gestire le richieste e le risposte del nostro server. Sicu
 Quindi gli step sono: __parse url__, __file statici__, __logica delle routes__. I file statici accedono al file system, mentre la logica delle routes solitamente ad un __database__.
 Il core di NodeJS ci fornisce gli strumenti base per definire un nostro server che gestisca le richieste (request o req) e le risposte (response o res) grazie al modulo __http__, il parse delle url e cioè l'analisi dell'indirizzo digitato e quindi la consapevolezza di ciò che ha chiesto l'utente e di eventuali query string passate, tramite il modulo __url__, e la gestione del file system con __path__ e __fs__. Qui un semplicissimo esempio che mette in evidenza che il browser effettua, più di una request, in questo caso oltre la request alla root (/) di localhost:3000, chiederà anche la favicon.ico:
 
+```
+//app.js
+var http = require('http');
+
+var server = http.createServer(function(req, res){
+  res.writeHead(200, {'Content-Type': 'text/plain'});
+  res.end('Ciao!\n');
+
+});
+
+server.listen(8000,'127.0.0.1');
+
+module.exports = server;
+```
+
+Posso verificare le due richieste anche nella sezione "Network" degli strumenti di sviluppo di Google Chrome. Cliccando sula richiesta localhost (dovresti vedere anche quella di favicon) puoi analizzare l'intestazione (Header)  sia della request che della response.
+
+
+Oppure un'altra versione, leggermente diversa in cui specifico solo la porta e la funzione di callback a parte e applico solo delle console.log a terminale:
+
 ```js
+//app.js
 var http = require('http');
 
 var server = http.createServer(handleRequest).listen(3000);
@@ -586,6 +607,7 @@ console.log('Server in ascolto');
 Il server creato di fatto è un oggeto di EventEmitter, che gestisce l'evento tramite una callback che ha due oggetti request e response. La request, come abbiamo visto, porta con se vari proprietà tra cui il __method__ e l'__url__. La request, anch'essa EventEmitter, implemeta uno stream di ascolto per l'invio dei dati contenuti nel body. Questo stream deve essere canalizzato (pipe) in modo da ricomporre i cari chunk con gli eventi __data__ e __end__, e gestire eventuali errori con l'evento __error__:
 
 ```js
+//app.js
 var server = http.createServer().listen(3000);
 
 server.on('request', function(request, response) {
@@ -612,6 +634,7 @@ curl -H "Content-Type: application/json" -X POST -d '{"username":"xyz","password
 L'Header di risposta si può impostare implicitamente con il response.setHeader(header) e response.statusCode(status) o esplicitamente con il response.writeHead(status, header). La differenza è con quest'ultimo stabiliamo il punto preciso dell'invio dell'header, con il primo lasciamo questa decisione a NodeJS. Inoltre anche la risposta può generare un errore e quindi anche qui dovrò prevedere l'on-error come visto per la request:
 
 ```js
+//app.js
 var server = http.createServer().listen(3000);
 
 server.on('request', function(request, response) {
@@ -689,6 +712,48 @@ Questo è semplicemente un banale esempio, il codice andrebbe __modularizzato__ 
 | DELETE | /albums/:id                        | Elimina l'album identificato da :id        |
 
 Tabella MD generata con: [markdown tables](http://www.tablesgenerator.com/markdown_tables)
+
+# Test
+
+Riprendiamo la prima versione del nostro server, in cui ho esportato il server e la listen come chiamata successiva. Introduciamo una breve sezione per il testing del nostro server NodeJS. Installiamo i seguenti tools: npm install --save-dev mocha chai request e (se non l'ho fatto fate npm init) nel package.json andiamo ad inserire il comando "script" per lanciare mocha:
+
+```
+//package.json
+...
+"scripts": {
+    "test": "./node_modules/.bin/mocha --reporter spec"
+  }
+...
+```
+
+creo una cartella test con un file serverTest.js:
+
+```js
+//serverTest.js
+var chai = require('chai');
+var request = require('request');
+var expect = chai.expect;
+var server = require('../index');
+
+describe('server response', function () {
+  before(function () {
+    server.listen(8000);
+  });
+  after(function () {
+    server.close();
+  });
+  it('should return 200', function (done) {
+    request.get('http://localhost:8000', function (err, res, body){
+      console.log(res.statusCode)
+      expect(res.statusCode).to.equal(200);
+      expect(res.body).to.equal('Ciao!\n');
+      done();
+    });
+  });
+});
+```
+
+Lanciamo il test con "npm run test".
 
 # Express
 
