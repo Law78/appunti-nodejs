@@ -20,6 +20,58 @@ Alcuni termini importanti su cui è meglio fare un refresh:
 - __JSON__: E' un formato ispirato agli oggetti letterali di Javascript. E' un semplice plain-text, human-readable, per il trasferimento di dati. Probabilmente conoscerai XML...
 - __ROUTING__: L'instradamento consiste in una mappatura delle richieste ad una risorsa. Le richieste sono individuate dagli endpoint, ovvero degli indirizzi del tipo '/users' e da un verbo HTTP.
 
+# NPM
+
+Prima di parlare di NodeJS introduciamo NPM (Node Package Manager) che è incorporato a NodeJS e ci permette di utilizzare e condividere il codice, di installare all'interno del nostro progetti package scritti da terzi e gestirne le dipendenze. Una dipendenza è il dover utilizzare il codice di un altro package, eventualmente di una certa versione.
+Con NPM possiamo installare i package a livello globale, e quindi disponibili a tutti i nostri progetti, oppure locali al progetto.
+C'è da dire che NPM è utilizzabile a prescindere da NodeJS!!!
+Esiste un registro web dei packages disponibili, mentre in locale al nostro progetto, viene creata una cartella __node_modules__ che individua la posizione dei package installati.
+
+Quando utilizziamo NPM, abbiamo a che fare con [SEMVER](http://semver.org) (semantyc version), per la definizione di quale versione utilizzare di un dato package, tramite un set di regole. Una versione è individuata con il gruppo di numeri Major.Minor.Patch. Il Patch indentifica la correzione di bug e posso tranquillamente aggiornare la versione corrente senza "rompere" il codice dipendente. Il Minor identifica l'aggiunta di alcune funzionalità, e la compatibilità verso il "vecchio" è garantita. Infine il Major identifica dei cambiamenti che possono interrompere la retro compatibilità e prima di fare un aggiornamento devo vedere gli eventuali cambiamenti da apporre al codice.
+Davanti la versione posso trovare il carattere "^", che sta a significare che posso aggiornare sia il Patch che il Minor, mentre la "~" ci permette di aggiornare solo il Patch:
+
+```
+"mocha": "^3.2.0",
+"request": "~2.79.0",
+```
+
+NPM è utile anche per inizializzare il nostro progetto NodeJS tramite il comando:
+
+```
+npm init
+```
+
+il comando genera un file package.json che tiene tracciata della configurazione del nostro progetto e delle dipendenze nonchè i comandi di avvio e test.
+Per installare un package possiamo fare:
+
+```
+npm install nodemon -g
+npm install --save express body-parser moment
+npm install --save-dev mocha karma chai
+```
+
+Per eventuali problemi di permessi leggi [qui](https://docs.npmjs.com/getting-started/fixing-npm-permissions)
+Questi 3 comandi installano rispettivamente nodemon a livello globale, express, moment e body-parser localmente al progetto come dipendenza e mocha, karma e chai come dipendenza di sviluppo, sempre all'interno del progetto. Il parametro save e save-dev serve per scrivere la dipendenza nel package.json.
+
+Aprendo il package.json, la sezione "scripts" ci permette di definire dei comandi da avviare nella command-line. Con il comando npm run, abbiamo la lista di questi comandi, che andremo a definire nel corso del progetto.
+
+Proviamo a giocare con le date, utilizzo touch per creare il file app.js e vim per editarlo, ma posso usare sublime, atom, vscode o altro:
+
+```
+npm init
+npm install --save moment
+touch app.js
+vim app.js
+```
+
+```
+//app.js
+var moment = require('moment');
+console.log(moment().format("DD/MM/YYYY"));
+```
+
+Posso cancellare la cartella node_modules e riscrivere il comando npm install per reinstallare i moduli che sono riferiti nel package.json.
+
 # NodeJS
 
 _NodeJS ci permette di usare Javascript anche per il codice backend, NodeJS è single-thread con un cuore asincrono, NodeJS è EventDriven ed esegue il codice concorrentemente grazie all'event-loop. NodeJS è veloce, grazie all'engine Google V8 ed al sistema I/O non bloccante. NodeJS è immediato (ma non semplice per la sua natura asincrona). L'ordine temporale va oltre al pensiero logico della programmazione sincrona e del nostro modo di pensare. E' questo lo scoglio da superare._
@@ -786,6 +838,7 @@ Lanciamo il test con "npm run test".
 Proviamo a fare il test del server che fornisce come risposta la pagina index.html con il tag h1. Lanciando questo test, ovviamente la expect fallirà. Modifichiamo il test:
 
 ```js
+//serverTest.js
 var chai = require('chai');
 var request = require('request');
 var expect = chai.expect;
@@ -814,7 +867,7 @@ describe('server response', function () {
 Aggiungiamo al nostro server un bel routing di base, facciamo uso dello streaming per l'invio del file index.html, mentre utilizziamo un oggetto che serializziamo con JSON.stringify per la pagina di about, infine un bell'errore di 404 se la pagina richiesta non è la root '/' o la '/about':
 
 ```js
-app.js
+//app.js
 var http = require('http');
 var fs = require('fs');
 var port = 8000;
@@ -855,6 +908,7 @@ module.exports = server;
 Il test completo sarà:
 
 ```js
+//serverTest.js
 var chai = require('chai');
 var request = require('request');
 var expect = chai.expect;
