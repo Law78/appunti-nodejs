@@ -591,7 +591,7 @@ module.exports = server;
 ```
 
 Posso verificare le due richieste anche nella sezione "Network" degli strumenti di sviluppo di Google Chrome. Cliccando sula richiesta localhost (dovresti vedere anche quella di favicon) puoi analizzare l'intestazione (Header)  sia della request che della response.
-
+Ovviamente questi server che stiamo scrivendo, a parte un'ultima versione che implementerà un routing primitivo, risponderanno a qualsiasi URL inviata al server, in quanto non controlleremo l'endpoint richiesta ed eventualmente gestire un errore di 404 Not Found.
 
 Oppure un'altra versione, leggermente diversa in cui specifico solo la porta e la funzione di callback a parte e applico solo delle console.log a terminale:
 
@@ -789,7 +789,7 @@ Proviamo a fare il test del server che fornisce come risposta la pagina index.ht
 var chai = require('chai');
 var request = require('request');
 var expect = chai.expect;
-var server = require('../index');
+var server = require('../app');
 var fs = require('fs');
 
 describe('server response', function () {
@@ -805,6 +805,81 @@ describe('server response', function () {
       var html = fs.readFileSync('index.html','utf8');
       expect(res.statusCode).to.equal(200);
       expect(res.body).to.equal(html);
+      done();
+    });
+  });
+});
+```
+
+Aggiungiamo al nostro server un bel routing di base, facciamo uso dello streaming per l'invio del file index.html, mentre utilizziamo un oggetto che serializziamo con JSON.stringify per la pagina di about, infine un bell'errore di 404 se la pagina richiesta non è la root '/' o la '/about':
+
+```js
+app.js
+var http = require('http');
+var fs = require('fs');
+var port = 8000;
+var hostname = '127.0.0.1';
+
+var server = http.createServer(function(req, res){
+
+  if (req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    fs.createReadStream(__dirname + '/index.html').pipe(res);
+    return;
+  }
+
+  if (req.url === '/about') {
+    res.writeHead(200 , { 'Content-Type' : 'application/json' });
+    var obj = {
+      name: 'Lorenzo',
+      cognome: 'Franceschini',
+      about: 'I\'m a software developer'
+    };
+    res.end(JSON.stringify(obj));
+    return;
+  }
+
+  res.statusCode = 404;
+  res.setHeader('Content-Type', 'text/plain');
+  res.end('Content Not Found!\n');
+  
+});
+
+server.listen(port, hostname, () => {
+  console.log(`Server running at http://${hostname}:${port}/`);
+});
+
+module.exports = server;
+```
+
+Il test completo sarà:
+
+```js
+var chai = require('chai');
+var request = require('request');
+var expect = chai.expect;
+var server = require('../app');
+var fs = require('fs');
+
+describe('server response', function () {
+  before(function () {
+    server.listen(8000);
+  });
+
+  after(function () {
+    server.close();
+  });
+  it('should return 200', function (done) {
+    request.get('http://localhost:8000', function (err, res, body){
+      var html = fs.readFileSync('index.html','utf8');
+      expect(res.statusCode).to.equal(200);
+      expect(res.body).to.equal(html);
+      done();
+    });
+  });
+  it('should return 404', function (done) {
+    request.get('http://localhost:8000/test', function (err, res, body){
+      expect(res.statusCode).to.equal(404);
       done();
     });
   });
