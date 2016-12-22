@@ -569,7 +569,7 @@ NodeJS ci permette di gestire le richieste e le risposte del nostro server. Sicu
 Quindi gli step sono: __parse url__, __file statici__, __logica delle routes__. I file statici accedono al file system, mentre la logica delle routes solitamente ad un __database__.
 Il core di NodeJS ci fornisce gli strumenti base per definire un nostro server che gestisca le richieste (request o req) e le risposte (response o res) grazie al modulo __http__, il parse delle url e cioè l'analisi dell'indirizzo digitato e quindi la consapevolezza di ciò che ha chiesto l'utente e di eventuali query string passate, tramite il modulo __url__, e la gestione del file system con __path__ e __fs__. Qui un semplicissimo esempio che mette in evidenza che il browser effettua, più di una request, in questo caso oltre la request alla root (/) di localhost:3000, chiederà anche la favicon.ico:
 
-```
+```js
 //app.js
 var http = require('http');
 
@@ -602,6 +602,25 @@ function handleRequest(request, response){
 }
 
 console.log('Server in ascolto');
+```
+
+Creiamo un server di esempio che fornisce come risposta un file index.html, che creiamo semplicemente con un tag h1 'Ciao Mondo', il nostro server sarà:
+
+```js
+//app.js
+var http = require('http');
+var fs = require('fs');
+
+var server = http.createServer(function(req, res){
+  res.writeHead(200, {'Content-Type': 'text/html'});
+  var html = fs.readFileSync(__dirname + '/index.html');
+  res.end(html);
+
+});
+
+server.listen(8000,'127.0.0.1');
+
+module.exports = server;
 ```
 
 Il server creato di fatto è un oggeto di EventEmitter, che gestisce l'evento tramite una callback che ha due oggetti request e response. La request, come abbiamo visto, porta con se vari proprietà tra cui il __method__ e l'__url__. La request, anch'essa EventEmitter, implemeta uno stream di ascolto per l'invio dei dati contenuti nel body. Questo stream deve essere canalizzato (pipe) in modo da ricomporre i cari chunk con gli eventi __data__ e __end__, e gestire eventuali errori con l'evento __error__:
@@ -715,7 +734,7 @@ Tabella MD generata con: [markdown tables](http://www.tablesgenerator.com/markdo
 
 # Test
 
-Riprendiamo la prima versione del nostro server, in cui ho esportato il server e la listen come chiamata successiva. Introduciamo una breve sezione per il testing del nostro server NodeJS. Installiamo i seguenti tools: npm install --save-dev mocha chai request e (se non l'ho fatto fate npm init) nel package.json andiamo ad inserire il comando "script" per lanciare mocha:
+Riprendiamo la prima versione del nostro server della sezione precedente, in cui ho esportato il server e la listen come chiamata successiva. Introduciamo una breve sezione per il testing del nostro server NodeJS. Installiamo i seguenti tools: npm install --save-dev mocha chai request e (se non l'ho fatto fate npm init) nel package.json andiamo ad inserire il comando "script" per lanciare mocha:
 
 ```
 //package.json
@@ -733,7 +752,7 @@ creo una cartella test con un file serverTest.js:
 var chai = require('chai');
 var request = require('request');
 var expect = chai.expect;
-var server = require('../index');
+var server = require('../app');
 
 describe('server response', function () {
   before(function () {
@@ -754,6 +773,34 @@ describe('server response', function () {
 ```
 
 Lanciamo il test con "npm run test".
+Proviamo a fare il test del server che fornisce come risposta la pagina index.html con il tag h1. Lanciando questo test, ovviamente la expect fallirà. Modifichiamo il test:
+
+```js
+var chai = require('chai');
+var request = require('request');
+var expect = chai.expect;
+var server = require('../index');
+var fs = require('fs');
+
+describe('server response', function () {
+  before(function () {
+    server.listen(8000);
+  });
+
+  after(function () {
+    server.close();
+  });
+  it('should return 200', function (done) {
+    request.get('http://localhost:8000', function (err, res, body){
+      var html = fs.readFileSync('index.html','utf8');
+      expect(res.statusCode).to.equal(200);
+      expect(res.body).to.equal(html);
+      done();
+    });
+  });
+});
+```
+
 
 # Express
 
