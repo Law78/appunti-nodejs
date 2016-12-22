@@ -52,6 +52,25 @@ npm install --save-dev mocha karma chai
 
 Per eventuali problemi di permessi leggi [qui](https://docs.npmjs.com/getting-started/fixing-npm-permissions)
 Questi 3 comandi installano rispettivamente nodemon a livello globale, express, moment e body-parser localmente al progetto come dipendenza e mocha, karma e chai come dipendenza di sviluppo, sempre all'interno del progetto. Il parametro save e save-dev serve per scrivere la dipendenza nel package.json.
+Per verificare l'elenco dei packages installati globalmente posso scrivere:
+
+```
+npm list -g
+npm ls -g --depth 0
+```
+
+Il secondo comando è sicuramente più leggibile in quanto non visualizzo le dipendeze.
+In sistemi Unix/Mac solitamente i file globali sono archiviati in /usr/local/lib/node, o in /usr/lib o /usr/local/lib/node_module. In sistemi Windows abbiamo:
+
+- Windows XP: %USERPROFILE%\Application Data\npm\node_modules
+- Windows 7: %AppData%\npm\node_modules
+- Windows 10: %USERPROFILE%\AppData\Roaming\npm\node_modules
+
+Possiamo anche lanciare il comando seguente per avere la corretta locazione dei files globali:
+
+```
+npm root -g
+```
 
 Aprendo il package.json, la sezione "scripts" ci permette di definire dei comandi da avviare nella command-line. Con il comando npm run, abbiamo la lista di questi comandi, che andremo a definire nel corso del progetto.
 
