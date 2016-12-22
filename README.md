@@ -681,7 +681,7 @@ server.on('request', function(request, response) {
 });
 ```
 
-Possiamo creare un server passando una callback che canalizzi la logica in base al metodo della richiesta:
+Possiamo creare un server passando una callback che canalizzi la logica in base al metodo della richiesta ed implementare un routing primitivo:
 
 ```js
 http.createServer(handle_request).listen(port, '127.0.0.1'); 
@@ -737,6 +737,8 @@ Questo è semplicemente un banale esempio, il codice andrebbe __modularizzato__ 
 | DELETE | /albums/:id                        | Elimina l'album identificato da :id        |
 
 Tabella MD generata con: [markdown tables](http://www.tablesgenerator.com/markdown_tables)
+
+# FileSsytem (FS) - Stream - Pipe - Buffer
 
 # Test
 
@@ -904,7 +906,7 @@ module.exports = app;
 
 Con app.use indichiamo l'utilizzo dei nostri middleware, di terze parti come morgan e body-parser, o custom come routes. Impostiamo il template engine a EmbeddedJS (EJS) ed esportiamo la nostra app. Nota che il path fa uso di \_\_dirname, variabile che mi trovo nell'ambiente NodeJS che punta alla cartella del file in questione e cioè "src", per questo farò un "../".
 
-## Routes
+# Routes
 
 In NodeJS una route è il legame tra un endpoint ed una risora individuata da un URI. Una istanza express ha delle funzioni di gestione degli instradamenti: get, post, put e delete che accettano due parametri, l'URI e la funzione di gestione.
 
@@ -938,7 +940,7 @@ app.get('/about', function(req, res) {
 module.exports = app;
 ```
 
-## Middleware
+# Middleware
 
 [Middleware Ufficiali Express](https://github.com/senchalabs/connect#middleware)
 Un middleware è una funzione che implementa una logica, la cui signature è del tipo function(request, response, next). La funzione next è la chiamata al successivo middleware (se previsto). Può passare un parametro che viene interpretato, dal successivo middleware, come un errore. Express si compone di tutta una serie di middleware che, a cascata e in ordine di dichiarazione, vengono eseguiti per arrivare dalla richiesta alla risposta.
@@ -976,16 +978,25 @@ app.use(function(err, req, res, next) {
 }); 
 ```
 
-## Views
+# Views
 
-## NodeJS ed ES6
+# NodeJS ed ES6
 
-## MySQL
+# Promise
 
-## MongoDB
+# Socket.io
 
-## PostgreSQL
+# MySQL
 
+# MongoDB
+
+# PostgreSQL
+
+# Passport
+
+# JWT
+
+# Heroku - Amazon AWS
 
 # Note finali
 Infine possiamo minificare i file js e css con GRUNT, GULP... Utilizzare PM2... YARN...
