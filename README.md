@@ -8,6 +8,11 @@ Una richiesta inviata al server genera una risposta, che, oltre a contenere la r
 
 __REST__: è una architettura web che definisce le regole di comunicazione tra client e server. Adottato come principale architettura da molto servizi web, fornendo l'accesso a degli endpoints ad una __risorsa__ tramite i principali __VERBS__ del protocollo HTTP. Solitamente in coppia con __JSON__ e sistemi di autenticazione basati su __TOKEN__, che risiedono nell'HEADER di una Request.
 __VERBS__: sono i comandi che inviamo tramite il protocollo HTTP, i più importanti sono GET, POST, PUT e DELETE che, per convenzione in molti framework e testi, vengono associati ai comandi CRUD del mondo SQL. I comandi POST e PUT sono ambedue comandi di creazione di una risorsa, in genere se l'identificativo viene creato lato server (e quindi probabilmente una risorsa ex-novo) la POST è più appropriata della PUT. Se l'identificativo è fornito lato client o comunque è una risorsa conosciuta dal client, la PUT è più appropriata. Filosofia-time. I metodi __safe__ sono quelli che non modificano le risorse e cioè la sola GET (e OPTIONS e HEAD non menzionati) e pertanto possono essere anche cachati senza danni. I metodi __idempotenti__ sono quei metodi che posso chiamare n volte senza che il risultato cambi, come ad esempio la funzione che stampa "ciao" o i verbs PUT e DELETE. Il POST? Non è ne safe ne idempotent. Ciò è da tenere a mente per costruire API fault-tolerant.
+__PROTOCOLLO__:
+__TCP/IP__:
+__HTTP__:
+__ADDRESS__ e __PORT__:
+__SOCKET__:
 
 # NodeJS
 
@@ -33,21 +38,91 @@ La prima convenzione che mi appunto è quella detta Error-First Callback: il pri
 
 ### Invocare funzioni C++
 
-Sebbene questo argomento non è rilevante per poter utilizzare NodeJS, ho voluto scrivere due righe sull'argomento a mò di memoria personale e curiosità. E' possibile scrivere funzioni e oggetti in C++ e invocarli da Javascript tramite gli Addons.
-Vediamo come mappare una funzione e i suoi argomenti passati da Javascript e il valore di ritorno passato da C++. Prima di tutto devo installare globalmente node-gyp globalmente, creo un file .cc e creo il file binding.gyp:
+Sebbene questo argomento non è rilevante per poter utilizzare NodeJS, ho voluto scrivere due righe sull'argomento a mò di memoria personale e curiosità. 
+Il codice Javascript che scrivo, NodeJS lo "invia" all'engine V8 (scritto in C++) che a sua volta lo trasforma in codice macchina utilizzabile sul processore che sto usando. E' possibile scrivere le proprie funzioni C++ che estendono V8 e mapparle per essere usate anche in Javascript, e quindi implementare nuove funzionalità esposte da NodeJS! That's cool!
+
+
+E' possibile scrivere funzioni e oggetti in C++ e invocarli da Javascript tramite gli Addons.
+Vediamo come mappare una funzione e i suoi argomenti passati da Javascript e il valore di ritorno passato da C++. Prima di tutto devo installare globalmente node-gyp globalmente, creo un file .cc e creo il file binding.gyp. Quello che stiamo per fare è equivalente a questo codice Javascript:
 
 ```
+exports.greetings = function(arg1, arg2) { return arg1+arg2; };
+```
+
+Per fare il build del progetto abbiamo bisogno di un file di configurazione per node-gyp (precedentemente installato globalmente). Il file sorgente cc lo andiamo a creare in una cartella src.
+
+```
+//binding.gyp
 {
   "targets": [
     {
       "target_name": "addon",
-      "sources": [ "greetings.cc" ]
+      "sources": [ "src/test.cc" ]
+    }
+  ]
+}
+
+```
+
+Scriviamo un piccolo codice in C:
+
+```c
+#include <node.h>
+#include <stdio.h>
+
+namespace piccolotest{
+
+  void stampa(){
+    printf("Eccomi\n");
+  }
+  
+  int init() {
+    printf("Ciao\n");
+    stampa();
+    return 1;
+  }
+
+  NODE_MODULE(piccolotest, init)
+
+}
+```
+
+Ora mi basta un file Javascript per eseguire il codice C++ (in verità C):
+
+```
+const addon = require('./build/Release/addon');
+
+addon;
+```
+
+Ora creiamo un altro file di configurazione (volendo posso usare lo stesso e aggiungere più sources all'interno dell'array):
+
+```
+//binding.gyp
+{
+  "targets": [
+    {
+      "target_name": "addon",
+      "sources": [ "src/greetings.cc" ]
     }
   ]
 }
 ```
 
-successivamente creo il file greetings.cc
+Vediamo come definire un metodo ad un oggetto che utilizzero all'interno di Javascript con la sintassi V8.
+Per definire un metodo la signature sarà del tipo:
+
+```
+void Method(const v8::FunctionCallbackInfo<v8::Value>& args) 
+```
+
+mentre il bind di questo metodo in Javascript avviene con questa riga di codice:
+
+```
+NODE_SET_METHOD(target, "metodo", Method);
+```
+
+Creo il file greetings.cc
 
 ```cpp
 // greetings.cc
@@ -115,6 +190,25 @@ e con node greetings.js ottengo: "helloworld" :D
 
 
 https://nodejs.org/api/addons.html
+
+### Compilare V8
+
+Passo veloce: brew install v8
+
+Passi standard:
+I passi che seguono servono per compilare V8 su MacOS Sierra, ed è una continuazione della sessione precedente.
+Prima di tutto ho clonato il repo di V8: git clone https://chromium.googlesource.com/v8/v8
+Poi ho installato [depot_tools](http://dev.chromium.org/developers/how-tos/depottools) per gclient: git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+rendendolo disponibile nel PATH, nel mio caso zsh: vim ~/.zshrc e ho inserito:
+export PATH=~/Documents/NodeJS/depot_tools:"$PATH"
+Poi dalla cartella immediatamente superiore a v8 (del primo step) ho fatto: gclient config https://chromium.googlesource.com/v8/v8
+Poi entro nella cartella v8 e scrivo: gclient sync
+ed infine faccio: make native
+
+Compilazione di hello_world.cpp:
+clang++ -std=c++11 -I/usr/local/opt/v8 /usr/local/opt/v8/lib/*.a hello_world.cpp -o hello_world
+
+
 
 ### Module Pattern
 
