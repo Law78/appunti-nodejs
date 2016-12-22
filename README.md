@@ -205,10 +205,34 @@ Poi dalla cartella immediatamente superiore a v8 (del primo step) ho fatto: gcli
 Poi entro nella cartella v8 e scrivo: gclient sync
 ed infine faccio: make native
 
-Compilazione di hello_world.cpp:
-clang++ -std=c++11 -I/usr/local/opt/v8 /usr/local/opt/v8/lib/*.a hello_world.cpp -o hello_world
+Come compilare la shell.cc di sample e avere un REPL javascript:
 
+"clang++ -std=c++11 -I. -Iinclude samples/shell.cc -o samples/shell out/native/*.a"
+"cp out/native/*.bin samples/" 
+"./samples/shell"
 
+a questo punto ho la mia shell dove posso scrivere codice Javascript e utilizzare anche funzioni non Javascript come print, definita in shell.cc oppure definire una mia funzione in 3 semplici passi, la dichiaro, la lego al contesto e la scrivo ;)
+
+```
+void Ciaone(const v8::FunctionCallbackInfo<v8::Value>& args);
+
+...
+
+global->Set(
+      v8::String::NewFromUtf8(isolate, "ciaone", v8::NewStringType::kNormal)
+          .ToLocalChecked(),
+      v8::FunctionTemplate::New(isolate, Ciaone));
+      
+...
+
+void Ciaone(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  printf("Ciaone!!!");
+  printf("\n");
+  fflush(stdout);
+}
+```
+
+e ora in shell posso scrivere ciaone() ^^
 
 ### Module Pattern
 
